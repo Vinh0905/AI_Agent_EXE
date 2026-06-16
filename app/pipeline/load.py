@@ -7,7 +7,8 @@ from qdrant_client.http.models import Distance, PayloadSchemaType, VectorParams,
 
 embedding_model = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 qdrant_client = QdrantClient(
-    url="http://qdrant_db:6333",
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
 )
 COLLECTION_NAME = "cold_storage"
 
