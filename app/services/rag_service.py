@@ -1,20 +1,73 @@
 from asyncio.log import logger
 import json
-from openai import OpenAI
 import os
+from openai import OpenAI
 import openai
 from qdrant_client import QdrantClient
 from qdrant_client import models
+from app.pipeline.load import setup_qdrant, embed_and_load_chunk
+from app.pipeline.transform import transform_json_to_chunk
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "cold_storage"
+DATA_DIR = os.getenv("DATA_DIR", "/app/data")
+DATA_FILE = os.path.join(DATA_DIR, "products_data_chunks.jsonl")
+RAW_DATA_FILE = os.path.join(DATA_DIR, "products_data_raws.jsonl")
 ai_client = OpenAI(api_key=OPENAI_API_KEY)
 qdrant = QdrantClient(
     url=QDRANT_URL,
     api_key=QDRANT_API_KEY
 )
+
+
+def get_qdrant_point_count() -> int:
+    try:
+        count_result = qdrant.count(collection_name=COLLECTION_NAME)
+        return getattr(count_result, "count", 0)
+    except Exception as e:
+        logger.error(f"Không thể đếm điểm Qdrant: {e}")
+        return 0
+
+
+def ensure_chunk_data_ready() -> bool:
+    if os.path.exists(DATA_FILE):
+        logger.info(f"Tìm thấy file chunk dữ liệu: {DATA_FILE}")
+        return True
+
+    if os.path.exists(RAW_DATA_FILE):
+        logger.info(f"Không tìm thấy file chunk, chuyển đổi raw sang chunk: {RAW_DATA_FILE} -> {DATA_FILE}")
+        try:
+            transform_json_to_chunk(RAW_DATA_FILE, DATA_FILE)
+            return os.path.exists(DATA_FILE)
+        except Exception as e:
+            logger.error(f"Không thể chuyển đổi raw sang chunk: {e}")
+            return False
+
+    logger.warning(f"Không tìm thấy cả file chunk và raw: {DATA_FILE}, {RAW_DATA_FILE}")
+    return False
+
+
+def ensure_qdrant_ready() -> None:
+    try:
+        if not QDRANT_URL:
+            logger.error("Biến môi trường QDRANT_URL chưa được thiết lập.")
+            return
+
+        setup_qdrant()
+
+        if not ensure_chunk_data_ready():
+            logger.warning("Dữ liệu chunk Qdrant không sẵn sàng, bỏ qua quá trình nạp dữ liệu.")
+            return
+
+        current_count = get_qdrant_point_count()
+        logger.info(f"Qdrant collection '{COLLECTION_NAME}' hiện có {current_count} điểm.")
+        if current_count == 0:
+            logger.info(f"Qdrant trống, nạp data từ {DATA_FILE}...")
+            embed_and_load_chunk(DATA_FILE)
+    except Exception as e:
+        logger.error(f"Lỗi khi khởi tạo Qdrant: {e}")
 
 def analyze_query(query: str, stored_items: str = None, max_price: float = None, top_k = 4):
     analyzer_prompt = """Bạn là chuyên gia trích xuất dữ liệu. Hãy đọc câu hỏi và trả về ĐÚNG 1 ĐỊNH DẠNG JSON.

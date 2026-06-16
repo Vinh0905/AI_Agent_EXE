@@ -1,20 +1,27 @@
 from fastapi import FastAPI
 import logging
-from app.api.chat_router import router as chat_router 
-from fastapi.middleware.cors import CORSMiddleware 
+from app.api.chat_router import router as chat_router
+from app.services.rag_service import ensure_qdrant_ready
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
-    format= "%(asctime)s [%(levelname)s] %(message)s",
-) 
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title= "Rag Chatbot",
+    title="Rag Chatbot",
     description="Chat bot hỗ trợ tìm kiếm sản phẩm",
-    version= "1.0.0"
+    version="1.0.0"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting application and ensuring Qdrant data is ready...")
+    ensure_qdrant_ready()
+
 
 app.add_middleware(
     CORSMiddleware,

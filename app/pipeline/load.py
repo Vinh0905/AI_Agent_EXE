@@ -5,7 +5,13 @@ from openai import OpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PayloadSchemaType, VectorParams, PointStruct
 
+DATA_DIR = os.getenv("DATA_DIR", "/app/data")
+
+def get_data_file_path(filename: str) -> str:
+    return os.path.join(DATA_DIR, filename)
+
 embedding_model = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 qdrant_client = QdrantClient(
     url=os.getenv("QDRANT_URL"),
     api_key=os.getenv("QDRANT_API_KEY"),
@@ -90,7 +96,7 @@ def embed_and_load_chunk(input_file: str, batch_size: int = 100):
 
 if __name__ == "__main__":
     setup_qdrant()
-    input_file = "/app/data/products_data_chunks.jsonl"
-    print(f"Đang load dữ liệu từ file")
+    input_file = get_data_file_path("products_data_chunks.jsonl")
+    print(f"Đang load dữ liệu từ file: {input_file}")
     embed_and_load_chunk(input_file)
     print("Quá trình load dữ liệu hoàn tất")
