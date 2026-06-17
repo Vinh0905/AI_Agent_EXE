@@ -22,6 +22,7 @@ def transform_json_to_chunk(input_file: str, output_file: str, chunk_size: int =
             location_province = doc.get("location_province")
             address = doc.get("address")
             location_commune = doc.get("location_commune")
+            certificates = doc.get("certificates")
 
             info_lines = []
             if name:
@@ -34,6 +35,8 @@ def transform_json_to_chunk(input_file: str, output_file: str, chunk_size: int =
                 info_lines.append(f"Địa chỉ: {address}")
             if location_commune:
                 info_lines.append(f"Phường/Xã: {location_commune}")
+            if certificates:
+                info_lines.append(f"Chứng chỉ: {certificates}")
             base_info = "\n".join(info_lines)
 
             for i, chunk in enumerate(chunks):
@@ -53,6 +56,7 @@ def transform_json_to_chunk(input_file: str, output_file: str, chunk_size: int =
                     "location_province": location_province,
                     "address": address,
                     "location_commune": location_commune,
+                    "certificates": certificates,
                     "metadata": metadata
                 }
                 processed_trunks.add(json.dumps(chunk_doc, ensure_ascii=False))

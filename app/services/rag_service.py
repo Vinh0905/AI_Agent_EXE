@@ -183,15 +183,33 @@ def retrieve_context(query: str, stored_items: str = None, max_price: float = No
                 product_name = chunk['metadata'].get('name', '')
                 description = chunk['metadata'].get('description', '')
                 location_province = chunk['metadata'].get('location_province', '')
-                formatted_price = f"{chunk['price']:,.0f}".replace(",", ".")
+                address = chunk['metadata'].get('address', '')
+                certificates = chunk['metadata'].get('certificates', '')
+                
+                # Tính giá ±10%
+                price = chunk['price']
+                price_min = price * 0.9
+                price_max = price * 1.1
+                formatted_price_min = f"{price_min:,.0f}".replace(",", ".")
+                formatted_price_max = f"{price_max:,.0f}".replace(",", ".")
+                formatted_price = f"{price:,.0f}".replace(",", ".")
+                
                 combined_text = (
                     f"[SẢN PHẨM]\n"
-                    f"Tên: {product_name}\n"
                     f"Mô tả: {description}\n"
                     f"Tỉnh: {location_province}\n"
-                    f"{chunk['content']}\n"
-                    f"Giá bán: {formatted_price} VNĐ"
                 )
+                
+                # Thêm địa chỉ nếu có
+                if address:
+                    combined_text += f"Địa chỉ: {address}\n"
+                
+                combined_text += f"{chunk['content']}\n"
+                combined_text += f"Giá bán: {formatted_price} VNĐ (Khoảng: {formatted_price_min} - {formatted_price_max} VNĐ)\n"
+                
+                # Thêm chứng chỉ nếu có
+                if certificates:
+                    combined_text += f"Chứng chỉ: {certificates}"
             
             formatted_contexts.append(combined_text)
 
@@ -223,8 +241,9 @@ def generate_answer_stream(query: str, stored_items: str = None, max_price: floa
         QUY TẮC BẮT BUỘC:
         1. Thông tin trong [NGỮ CẢNH SẢN PHẨM] là các kho lạnh ĐÃ ĐƯỢC HỆ THỐNG LỌC CHUẨN XÁC theo mức giá và danh mục khách yêu cầu. 
         2. Hãy TỰ TIN giới thiệu các kho lạnh này. TUYỆT ĐỐI KHÔNG được nói là "không có kho lạnh nào phù hợp" nếu trong ngữ cảnh có chứa kho lạnh.
-        3. KHÔNG tự ý so sánh toán học (lớn hơn, nhỏ hơn). Chỉ trình bày lại tên, mô tả và giá tiền của kho lạnh trong ngữ cảnh một cách thân thiện, hấp dẫn để chốt sale.
-        4. Nếu [NGỮ CẢNH SẢN PHẨM] hoàn toàn trống, lúc đó mới lịch sự xin lỗi khách hàng.
+        3. KHÔNG tự ý so sánh toán học (lớn hơn, nhỏ hơn). Chỉ trình bày lại mô tả, địa chỉ, giá tiền (khoảng ±10%), và chứng chỉ của kho lạnh trong ngữ cảnh một cách thân thiện, hấp dẫn để chốt sale.
+        4. KHI GIỚI THIỆU MỖI KHO, PHẢI NHẮC ĐẦY ĐỦ: địa chỉ, khoảng giá, và chứng chỉ/chứng thực liên quan.
+        5. Nếu [NGỮ CẢNH SẢN PHẨM] hoàn toàn trống, lúc đó mới lịch sự xin lỗi khách hàng.
 
         [NGỮ CẢNH SẢN PHẨM]:
         {context_data}

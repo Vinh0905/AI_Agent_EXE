@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chatbot</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --user-bg: #dbeafe;
+      --bot-bg: #eef2f7;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --danger: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 760px;
+      height: 90vh;
+      background: var(--surface);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      background: var(--primary);
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .chat-subtitle {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: #f9fafb;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      line-height: 1.55;
+      word-break: break-word;
+      white-space: normal;
+    }
+
+    .message p {
+      margin: 0 0 8px;
+    }
+
+    .message p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message ul,
+    .message ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .message pre {
+      overflow-x: auto;
+      background: #111827;
+      color: #f9fafb;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .message code {
+      font-family: Consolas, monospace;
+    }
+
+    .user-message {
+      align-self: flex-end;
+      background: var(--user-bg);
+      border-bottom-right-radius: 6px;
+    }
+
+    .bot-message {
+      align-self: flex-start;
+      background: var(--bot-bg);
+      border-bottom-left-radius: 6px;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 0 18px 10px;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+      padding: 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .input-area input {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .input-area input:focus {
+      border-color: var(--primary);
+    }
+
+    .input-area button {
+      border: none;
+      background: var(--primary);
+      color: white;
+      border-radius: 999px;
+      padding: 0 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      min-width: 90px;
+    }
+
+    .input-area button:hover {
+      background: var(--primary-hover);
+    }
+
+    .input-area button:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    .error-text {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .chat-container {
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .message {
+        max-width: 92%;
+      }
+
+      body {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      Trợ lý AI
+      <div class="chat-subtitle">Hỏi sản phẩm, tư vấn, hỗ trợ khách hàng</div>
+    </div>
+
+    <div class="chat-box" id="chat-box"></div>
+    <div class="status" id="status">Sẵn sàng kết nối.</div>
+
+    <div class="input-area">
+      <input
+        type="text"
+        id="user-input"
+        placeholder="Nhập câu hỏi của bạn..."
+        autocomplete="off"
+      />
+      <button id="send-btn">Gửi</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://ai-agent-exe.onrender.com";
+    const CHAT_ENDPOINT = "/api/chat";
+
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const statusText = document.getElementById("status");
+
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+
+    function appendMessage(text, className) {
+      const div = document.createElement("div");
+      div.className = `message ${className}`;
+      div.innerHTML = marked.parse(text || "");
+      chatBox.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function appendPlainMessage(text, className) {
+      const div = document.createElement("div");
+      div.className = `message ${className}`;
+      div.textContent = text;
+      chatBox.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function scrollToBottom() {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function setLoadingState(loading) {
+      sendBtn.disabled = loading;
+      userInput.disabled = loading;
+      statusText.textContent = loading ? "Đang nhận phản hồi..." : "Sẵn sàng kết nối.";
+      if (!loading) userInput.focus();
+    }
+
+    appendMessage(
+      "Xin chào! Mình là **trợ lý AI** của bạn. Bạn muốn hỏi gì hôm nay?",
+      "bot-message"
+    );
+
+    sendBtn.addEventListener("click", sendMessage);
+
+    userInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const query = userInput.value.trim();
+      if (!query) return;
+
+      appendPlainMessage(query, "user-message");
+      userInput.value = "";
+      setLoadingState(true);
+
+      const botMessageDiv = document.createElement("div");
+      botMessageDiv.className = "message bot-message";
+      botMessageDiv.innerHTML = "Đang trả lời...";
+      chatBox.appendChild(botMessageDiv);
+      scrollToBottom();
+
+      let fullBotText = "";
+
+      try {
+        const response = await fetch(`${API_URL}${CHAT_ENDPOINT}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        if (!response.body) {
+          const data = await response.json();
+          fullBotText = data.reply || data.response || "Không có dữ liệu trả về.";
+          botMessageDiv.innerHTML = marked.parse(fullBotText);
+          return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let done = false;
+
+        while (!done) {
+          const result = await reader.read();
+          done = result.done;
+
+          if (result.value) {
+            const chunk = decoder.decode(result.value, { stream: true });
+            fullBotText += chunk;
+            botMessageDiv.innerHTML = marked.parse(fullBotText);
+            scrollToBottom();
+          }
+        }
+
+        if (!fullBotText.trim()) {
+          botMessageDiv.innerHTML = marked.parse("Mình chưa nhận được nội dung phản hồi.");
+        }
+      } catch (error) {
+        console.error("Chat error:", error);
+        botMessageDiv.innerHTML =
+          '<span class="error-text">Không kết nối được chatbot backend.</span><br>Kiểm tra lại URL API, CORS, và endpoint `/api/chat`.';
+      } finally {
+        setLoadingState(false);
+      }
+    }
+  </script>
+</body>
+</html>
