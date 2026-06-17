@@ -258,7 +258,7 @@ def generate_answer_stream(query: str, stored_items: str = None, max_price: floa
             ],
             stream=True,
             temperature=0.1,
-            max_tokens=100  # Để siêu thấp (0.1) để AI bám sát dữ liệu, không sáng tạo lung tung
+            max_tokens=512  # Tăng giới hạn để trả lời đầy đủ hơn
         )
 
         # Trả về từng chữ ngay khi OpenAI phản hồi

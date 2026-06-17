@@ -29,7 +29,7 @@ async def chat_with_bot(request: ChatRequest):
         )
         return StreamingResponse(
             answer_generator,
-            media_type="text/event-stream"
+            media_type="text/plain; charset=utf-8"
         )
         
     except Exception as e:
