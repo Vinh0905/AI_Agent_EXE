@@ -205,7 +205,7 @@ def retrieve_context(query: str, stored_items: str = None, max_price: float = No
                     combined_text += f"Địa chỉ: {address}\n"
                 
                 combined_text += f"{chunk['content']}\n"
-                combined_text += f"Giá bán: {formatted_price} VNĐ (Khoảng: {formatted_price_min} - {formatted_price_max} VNĐ)\n"
+                combined_text += f"Giá thuê: {formatted_price} VNĐ (Khoảng: {formatted_price_min} - {formatted_price_max} VNĐ)\n"
                 
                 # Thêm chứng chỉ nếu có
                 if certificates:
