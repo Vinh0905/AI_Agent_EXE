@@ -25,8 +25,6 @@ def transform_json_to_chunk(input_file: str, output_file: str, chunk_size: int =
             certificates = doc.get("certificates")
 
             info_lines = []
-            if name:
-                info_lines.append(f"Tên kho: {name}")
             if description:
                 info_lines.append(f"Mô tả: {description}")
             if location_province:
