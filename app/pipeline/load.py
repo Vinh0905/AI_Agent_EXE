@@ -70,7 +70,10 @@ def embed_and_load_chunk(input_file: str, batch_size: int = 100):
                 "stored_items": norm_stored if norm_stored else "không",
                 "name": doc.get("name", ""),
                 "description": doc.get("description", ""),
-                "location_province": doc.get("location_province", "")
+                "location_province": doc.get("location_province", ""),
+                "address": doc.get("address", ""),
+                "location_commune": doc.get("location_commune", ""),
+                "certificates": doc.get("certificates", "")
             }
 
             point = PointStruct(
