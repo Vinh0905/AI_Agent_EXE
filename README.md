@@ -36,6 +36,7 @@ AI_Agent_EXE/
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
+├── .env
 └── README.md
 ```
 
